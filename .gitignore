@@ -3,5 +3,6 @@
 node_modules/
 *__pycache__/
 static/styles/style.css
+static/scripts/app.js
 static
 token.json
