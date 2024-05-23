@@ -1,11 +1,13 @@
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse_lazy
+from django.shortcuts import get_object_or_404, redirect, HttpResponse, render
+from django.urls import reverse_lazy, reverse
+from django.views.decorators.http import require_POST
 from django.views.generic import ListView, CreateView, DeleteView
 from django.contrib import messages
 from members.models import Member
-from articles.models import Article
-from .models import Comment
+from .models import Comment, LikeComment
 from .forms import CommentForm
+from articles.models import Article
+from django.contrib.auth.decorators import login_required
 
 
 class CommentListView(ListView):
@@ -55,3 +57,19 @@ class CommentDeleteView(DeleteView):
     def get_success_url(self):
         member_id = self.object.member.id
         return reverse_lazy("comments:list", kwargs={"id": member_id})
+
+@login_required
+@require_POST
+def add_like(req, pk):
+    LikeComment.objects.create(like_by_id = req.user.id, like_comment_id = pk)
+    return redirect(req.META.get('HTTP_REFERER'))
+
+@login_required
+@require_POST
+def remove_like(req, pk):
+    try:
+        like = LikeComment.objects.get(like_by_id = req.user.id, like_comment_id = pk)
+        like.delete()
+    except:
+        pass
+    return redirect(req.META.get('HTTP_REFERER'))
