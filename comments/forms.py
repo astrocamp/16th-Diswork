@@ -1,7 +1,9 @@
-from django.forms import ModelForm
+from django import forms
+from martor.fields import MartorFormField
 from .models import Comment
 
-class CommentForm(ModelForm):
+class CommentForm(forms.ModelForm):
+    content = MartorFormField()
     class Meta:
         model = Comment
         fields = ["content"]

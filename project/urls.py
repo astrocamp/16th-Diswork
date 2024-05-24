@@ -13,4 +13,5 @@ urlpatterns = [
     path("tasks/", include("tasks.urls")),
     path("accounts/", include("allauth.urls")),
     path("comments/", include("comments.urls")),
+    path('martor/', include('martor.urls')),
 ]

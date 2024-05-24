@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
+from martor.models import MartorField
 
 class CommentManager(models.Manager):
     def get_queryset(self):
@@ -8,7 +9,7 @@ class CommentManager(models.Manager):
     
 class Comment(models.Model):
     member = models.ForeignKey("members.Member", on_delete=models.CASCADE)
-    content = models.TextField()
+    content = MartorField() 
     created_at = models.DateTimeField(auto_now_add=True)
     deleted_at = models.DateTimeField(null=True)
     like_comment = models.ManyToManyField(settings.AUTH_USER_MODEL, through="LikeComment", related_name="like_comment")
