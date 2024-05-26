@@ -62,7 +62,7 @@ class CommentDeleteView(DeleteView):
 @require_POST
 def add_like(req, pk):
     LikeComment.objects.create(like_by_id = req.user.id, like_comment_id = pk)
-    return redirect(req.META.get('HTTP_REFERER'))
+    return HttpResponse("")
 
 @login_required
 @require_POST
@@ -72,4 +72,4 @@ def remove_like(req, pk):
         like.delete()
     except:
         pass
-    return redirect(req.META.get('HTTP_REFERER'))
+    return HttpResponse("")
