@@ -20,7 +20,9 @@ class ArticleIndexView(ListView):
     template_name = "articles/index.html"
 
     def get_queryset(self):
-        return Article.objects.annotate(like_count=Count("article"))
+        return Article.objects.annotate(like_count=Count("article")).order_by(
+            "-created_at"
+        )
 
 
 @method_decorator(login_required, name="dispatch")
