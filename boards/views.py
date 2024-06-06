@@ -64,7 +64,6 @@ class BoardNewView(FormView):
             return render(request, "403.html", {"member_status":False})
         return super(BoardNewView, self).dispatch(request, *args, **kwargs)
 
-@permission_required('boards.create', raise_exception=True)
 @login_required
 @require_POST
 def create(req):
@@ -88,7 +87,7 @@ class BoardUpdateView(UpdateView):
     
     def get_object(self, queryset=None):
         obj = super(BoardUpdateView, self).get_object(queryset=queryset)
-        if obj != self.request.user:
+        if obj.member.id != self.request.user.id:
             raise PermissionDenied()
         return obj
 
