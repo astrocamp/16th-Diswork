@@ -4,8 +4,10 @@ from members.models import Member
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, get_object_or_404, render
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.contrib import messages
+from django.views.decorators.http import require_POST
+from lib.paginate_que import paginate_queryset
 
 
 @method_decorator(login_required, name="dispatch")
@@ -43,26 +45,31 @@ class FriendDeleteView(DeleteView):
 
 
 @login_required
+@require_POST
 def send_friend_request(req, receiver_id):
-    if req.method == "POST":
-        sender_id = req.user.id
-        receiver = get_object_or_404(Member, id=receiver_id)
-        if sender_id == receiver_id:
-            messages.error("不能向自己發送好友邀請")
-            return render("friends:member_list")
+    members = Member.objects.exclude(id=req.user.id)
+    page_number = req.POST.get("page")
+    page_obj, is_paginated  = paginate_queryset(members, page_number, 5)
+    sender_id = req.user.id
+    receiver = get_object_or_404(Member, id=receiver_id)
 
-        sender = get_object_or_404(Member, id=sender_id)
+    if sender_id == receiver_id:
+        messages.error("不能向自己發送好友邀請")
+        return render(req, "friends:member_list")
+    sender = get_object_or_404(Member, id=sender_id)
+    friend_request, created = Friend.objects.get_or_create(
+        sender=sender, receiver=receiver
+    )
 
-        friend_request, created = Friend.objects.get_or_create(
-            sender=sender, receiver=receiver
-        )
-        if created:
-            messages.success(req, "好友邀請已發送！")
-            return render(req, "friends/search_list.html")
-        else:
-            messages.error(req, "好友邀請已經發送過了！")
-            return render(req, "friends/search_list.html")
-    return redirect("friends:member_list")
+    if created:
+        messages.success(req, "好友邀請已發送！")
+    else:
+        messages.error(req, "好友邀請已經發送過了！")
+    redirect_url = reverse("friends:member_list")
+    if is_paginated:
+        redirect_url += f"?page={page_number}"
+
+    return redirect(redirect_url)    
 
 
 @login_required
