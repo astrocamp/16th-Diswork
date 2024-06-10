@@ -8,6 +8,7 @@ from django.urls import reverse_lazy, reverse
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 from lib.paginate_que import paginate_queryset
+from django.db.models import Q
 
 
 @method_decorator(login_required, name="dispatch")
@@ -45,31 +46,37 @@ class FriendDeleteView(DeleteView):
 
 
 @login_required
-@require_POST
 def send_friend_request(req, receiver_id):
     members = Member.objects.exclude(id=req.user.id)
     page_number = req.POST.get("page")
     page_obj, is_paginated  = paginate_queryset(members, page_number, 5)
     sender_id = req.user.id
-    receiver = get_object_or_404(Member, id=receiver_id)
+    receiver_exists = Member.objects.filter(id=receiver_id).exists()
 
-    if sender_id == receiver_id:
-        messages.error("不能向自己發送好友邀請")
-        return render(req, "friends:member_list")
-    sender = get_object_or_404(Member, id=sender_id)
-    friend_request, created = Friend.objects.get_or_create(
-        sender=sender, receiver=receiver
-    )
+    if not receiver_exists:
+        messages.error(req, "沒有這個使用者!")
+        return redirect("friends:member_list")
+    elif sender_id == receiver_id:
+        messages.error(req, "操作錯誤!")
+        return redirect("friends:member_list")
 
-    if created:
-        messages.success(req, "好友邀請已發送！")
-    else:
-        messages.error(req, "好友邀請已經發送過了！")
-    redirect_url = reverse("friends:member_list")
-    if is_paginated:
-        redirect_url += f"?page={page_number}"
+    if req.method == "POST":
+        is_friend = Friend.objects.filter(Q(sender_id=sender_id, receiver_id=receiver_id) | Q(sender_id=receiver_id, receiver_id=sender_id)).exists()
+        if is_friend:
+            friend = Friend.objects.filter(Q(sender_id=sender_id, receiver_id=receiver_id) | Q(sender_id=receiver_id, receiver_id=sender_id)).first()
+            if friend.status == "2":
+                messages.error(req, "己經是好友了。")
+            else:    
+                messages.error(req, "好友邀請已經發送過了！")
+        else:
+            Friend.objects.create(sender_id=sender_id, receiver_id=receiver_id)
+            messages.success(req, "好友邀請已發送！")
 
-    return redirect(redirect_url)    
+        if is_paginated:
+            redirect_url = reverse("friends:member_list")
+            redirect_url += f"?page={page_number}"
+        return redirect(redirect_url)       
+    return redirect("friends:member_list")
 
 
 @login_required
