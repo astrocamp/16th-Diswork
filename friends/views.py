@@ -64,6 +64,7 @@ def send_friend_request(req, receiver_id):
             else:    
                 messages.error(req, "好友邀請已經發送過了！")
         else:
+            messages.success(req, "好友邀請已發送！")
             Friend.objects.create(sender_id=sender_id, receiver_id=receiver_id)
     else:
         if not receiver_exists:
@@ -71,7 +72,7 @@ def send_friend_request(req, receiver_id):
         elif sender_id == receiver_id:
             messages.error(req, "不能加自己為好友!")
     redirect_url = reverse("friends:member_list")
-    
+
     if is_paginated:
             redirect_url += f"?page={page_number}"
 
