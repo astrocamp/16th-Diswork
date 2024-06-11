@@ -24,7 +24,6 @@ class ArticleIndexView(ListView):
         return (
             Article.objects.with_count()
             .filter(category_id=category_id)
-            .annotate(like_count=Count("like_article", distinct=True))
             .order_by("-like_count")
         )
 
@@ -79,7 +78,7 @@ class ShowView(DetailView):
         like_subquery = LikeArticle.objects.filter(
             like_by_article_id=self.request.user.id, like_article_id=OuterRef("pk")
         )
-        return Article.objects.annotate(is_like=Exists(like_subquery))
+        return Article.objects.with_count().annotate(is_like=Exists(like_subquery))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -154,6 +153,7 @@ def add_like(req, pk):
     article = get_object_or_404(Article, id=pk)
     article.like_article.add(req.user)
     article.save()
+    article.like_count = LikeArticle.objects.filter(like_article=pk).count()
     article.is_like = True
     return render(req, "articles/shared/like_button.html", {"article": article})
 
@@ -164,5 +164,6 @@ def remove_like(req, pk):
     article = get_object_or_404(Article, id=pk)
     article.like_article.remove(req.user)
     article.save()
+    article.like_count = LikeArticle.objects.filter(like_article=pk).count()
     article.is_like = False
     return render(req, "articles/shared/like_button.html", {"article": article})
